@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { currentFile} from "./utils";
 import { codeLensMap,clsLangId, intLangId, macLangId, lsExtensionId } from "./extension";
 import { QueryData } from "./types";
 import { makeRESTRequest } from "./makeRESTRequest";
@@ -15,11 +14,39 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
         console.log("Document language not valid "+document.languageId); 
         return;
     }
-    const file = currentFile(document);
-    if (!file) { 
-        console.log("Document malformed"); 
-        return; 
-    } // Document is malformed
+
+      let originSelectionRange = new vscode.Range(0, 0, 1, 0);
+      let className = "";
+
+      let inComment = false;
+      for (let i = 0; i < document.lineCount; i++) {
+        const line = document.lineAt(i);
+
+        // Skip initial comment block(s)
+        if (line.text.match(/\/\*/)) {
+          inComment = true;
+        }
+        if (inComment) {
+          if (line.text.match(/\*\//)) {
+            inComment = false;
+          }
+          continue;
+        }
+
+        // Discover class name
+        const classPat = line.text.match(/^(Class) (%?\b\w+\b(?:\.\b\w+\b)+)/i);
+        if (classPat) {
+          className = classPat[2];
+          originSelectionRange = new vscode.Range(i, 0, i, line.text.indexOf(className) + className.length);
+          break;
+        }
+      }
+
+      if (!className) {
+        console.log("Classname not found");
+        return;
+      }
+
     const symbols: vscode.DocumentSymbol[] = await vscode.commands.executeCommand(
       "vscode.executeDocumentSymbolProvider",
       document.uri
@@ -29,12 +56,10 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
       return;
     }
 
-   
-    if (!codeLensMap.has(file.name)) {
-      console.log("Loading file from server");
-      const classname=this.classNameFromFileName(file.name);
+    if (!codeLensMap.has(className)) {
+      console.log("Loading origins from server "+className);
+      
       const toriginsMap = new Map<string,{uri:vscode.Uri, origin:string}>();
-        console.log("symbols or token.isCancellationRequested ");
         // Query the server to get the metadata of all appropriate class members
         var data: QueryData = {
           query:  `
@@ -51,14 +76,14 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
                   ) as items 
                   where items.parent %INLIST (select $LISTFROMSTRING(Super) from %Dictionary.CompiledClass where name= ? ) SIZE ((10))
                   `,
-          parameters: new Array(1).fill(classname)
+          parameters: new Array(1).fill(className)
         };
         const server = await serverForUri(document.uri);     
         const respdata = await makeRESTRequest("POST", 1, "/action/query", server, data);
-        console.log("file loaded");
         if (respdata !== undefined && respdata.data.status.errors.length === 0 && respdata.data.result.content.length > 0) {
           // We got data back
           // 
+         console.log("origins loaded");
          
           for (let memobj of respdata.data.result.content) {
             if (!toriginsMap.has(memobj.Name)) {
@@ -66,16 +91,17 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
               toriginsMap.set(memobj.Name,{uri:uri,origin:memobj.Origin});
             }
           }        
+        } else {
+          console.log("origins failed to load");
         }
-       codeLensMap.set(file.name,toriginsMap);
+        codeLensMap.set(className,toriginsMap);
     } 
-    const originsMap=codeLensMap.get(file.name);
-    
+    const originsMap=codeLensMap.get(className);
 
     const result: vscode.CodeLens[] = [];
     const languageServer: boolean = vscode.extensions.getExtension(lsExtensionId)?.isActive ?? false;
     
-    if (document.languageId== clsLangId) {
+    if (document.languageId===clsLangId) {
       // Loop through the class member symbols
       symbols[0].children.forEach((symbol, idx) => {
         const type = symbol.detail.toLowerCase();
@@ -113,15 +139,5 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
     return new vscode.Range(line, 0, line, 80);
   }
 
-  private classNameFromFileName(filename:string) {
-    let classname="";
-    let sep="";
-    let fsplit=filename.split(".");
-    for (var i=0; i<(fsplit.length-1); i++) {
-      classname=classname + sep + fsplit[i];
-      sep=".";
-    }
-    return classname;
-  }
 }
 
