@@ -11,33 +11,43 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
-    if (![clsLangId, macLangId, intLangId].includes(document.languageId)) {return;}
+    if (![clsLangId, macLangId, intLangId].includes(document.languageId)) {
+        console.log("Document language not valid "+document.languageId); 
+        return;
+    }
     const file = currentFile(document);
-    if (!file) {return;} // Document is malformed
+    if (!file) { 
+        console.log("Document malformed"); 
+        return; 
+    } // Document is malformed
     const symbols: vscode.DocumentSymbol[] = await vscode.commands.executeCommand(
       "vscode.executeDocumentSymbolProvider",
       document.uri
     );
-    if (!symbols?.length || token.isCancellationRequested) {return;}
+    if (!symbols?.length || token.isCancellationRequested) {
+      console.log("symbols or token.isCancellationRequested ");
+      return;
+    }
 
    
     if (!codeLensMap.has(file.name)) {
+      console.log("Loading file from server");
       const classname=this.classNameFromFileName(file.name);
       const toriginsMap = new Map<string,{uri:vscode.Uri, origin:string}>();
-
+        console.log("symbols or token.isCancellationRequested ");
         // Query the server to get the metadata of all appropriate class members
         var data: QueryData = {
           query:  `
                   select * 
-                  from (SELECT Parent, Name, Description, Origin, FormalSpec, ReturnType AS Type, 'method' AS MemberType FROM %Dictionary.CompiledMethod WHERE Stub IS NULL 
-                        UNION ALL SELECT Parent, Name, Description, Origin, FormalSpec, Type, 'query' AS MemberType FROM %Dictionary.CompiledQuery 
-                        UNION ALL SELECT Parent,Name, Description, Origin, NULL AS FormalSpec, Type, 'projection' AS MemberType FROM %Dictionary.CompiledProjection 
-                        UNION ALL SELECT Parent,Name, Description, Origin, NULL AS FormalSpec, NULL AS Type, 'index' AS MemberType FROM %Dictionary.CompiledIndex 
-                        UNION ALL SELECT Parent,Name, Description, Origin, NULL AS FormalSpec, NULL AS Type, 'foreignkey' AS MemberType FROM %Dictionary.CompiledForeignKey
-                        UNION ALL SELECT Parent,Name, Description, Origin, NULL AS FormalSpec, NULL AS Type, 'trigger' AS MemberType FROM %Dictionary.CompiledTrigger 
-                        UNION ALL SELECT Parent,Name, Description, Origin, NULL AS FormalSpec, NULL AS Type, 'xdata' AS MemberType FROM %Dictionary.CompiledXData 
-                        UNION ALL SELECT Parent,Name, Description, Origin, NULL AS FormalSpec, RuntimeType AS Type, 'property' AS MemberType FROM %Dictionary.CompiledProperty 
-                        UNION ALL SELECT Parent,Name, Description, Origin, NULL AS FormalSpec, Type, 'parameter' AS MemberType FROM %Dictionary.CompiledParameter
+                  from (          SELECT Parent,Name, Description, Origin, 'method' AS MemberType FROM %Dictionary.CompiledMethod WHERE Stub IS NULL 
+                        UNION ALL SELECT Parent,Name, Description, Origin, 'query' AS MemberType FROM %Dictionary.CompiledQuery 
+                        UNION ALL SELECT Parent,Name, Description, Origin, 'projection' AS MemberType FROM %Dictionary.CompiledProjection 
+                        UNION ALL SELECT Parent,Name, Description, Origin, 'index' AS MemberType FROM %Dictionary.CompiledIndex 
+                        UNION ALL SELECT Parent,Name, Description, Origin, 'foreignkey' AS MemberType FROM %Dictionary.CompiledForeignKey
+                        UNION ALL SELECT Parent,Name, Description, Origin, 'trigger' AS MemberType FROM %Dictionary.CompiledTrigger 
+                        UNION ALL SELECT Parent,Name, Description, Origin, 'xdata' AS MemberType FROM %Dictionary.CompiledXData 
+                        UNION ALL SELECT Parent,Name, Description, Origin, 'property' AS MemberType FROM %Dictionary.CompiledProperty 
+                        UNION ALL SELECT Parent,Name, Description, Origin, 'parameter' AS MemberType FROM %Dictionary.CompiledParameter
                   ) as items 
                   where items.parent %INLIST (select $LISTFROMSTRING(Super) from %Dictionary.CompiledClass where name= ? ) SIZE ((10))
                   `,
@@ -45,6 +55,7 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
         };
         const server = await serverForUri(document.uri);     
         const respdata = await makeRESTRequest("POST", 1, "/action/query", server, data);
+        console.log("file loaded");
         if (respdata !== undefined && respdata.data.status.errors.length === 0 && respdata.data.result.content.length > 0) {
           // We got data back
           // 
@@ -93,9 +104,9 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
   }
   private addOverride(line: number,  origin: string,uri:vscode.Uri, label: string) {
     return new vscode.CodeLens(this.range(line), {
-      title: "Override "+origin,
+      title: "Override",
       command: "vscode.open",
-      arguments: [uri,label],
+      arguments: [uri],
     });
   }
     private range(line: number): vscode.Range {
