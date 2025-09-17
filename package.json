@@ -1,7 +1,7 @@
 {
   "name": "pxw-vscode-test",
   "displayName": "pxw-vscode-test",
-  "description": "",
+  "description": "My first vscode extension.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.103.0"
@@ -14,8 +14,7 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-    ]
+    "commands": []
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -28,24 +27,31 @@
   "extensionDependencies": [
     "intersystems-community.servermanager"
   ],
-    "dependencies": {
-    "axios": "^1.2.4"
-  },
   "devDependencies": {
-    "axios": "^1.2.4",
-    "axios-cookiejar-support": "^5.0.2",
-    "semver": "^7.6.3",
-    "tough-cookie": "^4.1.4",
-		"@intersystems-community/intersystems-servermanager": "^3.8.0",
-		"@intersystems-community/vscode-objectscript": "^3.0.7",
-    "@types/vscode": "^1.103.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
+    "@types/vscode": "^1.103.0",
     "@typescript-eslint/eslint-plugin": "^8.42.0",
     "@typescript-eslint/parser": "^8.42.0",
-    "eslint": "^9.34.0",
-    "typescript": "^5.9.2",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "axios": "^1.12.2",
+    "eslint": "^9.34.0",
+    "typescript": "^5.9.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pxw-paul/pxw-vscode-test.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pxw-paul/pxw-vscode-test/issues"
+  },
+  "homepage": "https://github.com/pxw-paul/pxw-vscode-test#readme",
+  "dependencies": {
+    "axios": "^1.2.4"
   }
 }

@@ -10,9 +10,12 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
+
+    const result: vscode.CodeLens[] = [];
+
     if (![clsLangId, macLangId, intLangId].includes(document.languageId)) {
         console.log("Document language not valid "+document.languageId); 
-        return;
+        return result;
     }
 
       let originSelectionRange = new vscode.Range(0, 0, 1, 0);
@@ -44,7 +47,7 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
 
       if (!className) {
         console.log("Classname not found");
-        return;
+        return result;
       }
 
     const symbols: vscode.DocumentSymbol[] = await vscode.commands.executeCommand(
@@ -53,7 +56,7 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
     );
     if (!symbols?.length || token.isCancellationRequested) {
       console.log("symbols or token.isCancellationRequested ");
-      return;
+      return result;
     }
 
     if (!codeLensMap.has(className)) {
@@ -98,31 +101,34 @@ export class ObjectScriptCodeLensProvider implements vscode.CodeLensProvider {
     } 
     const originsMap=codeLensMap.get(className);
 
-    const result: vscode.CodeLens[] = [];
-    const languageServer: boolean = vscode.extensions.getExtension(lsExtensionId)?.isActive ?? false;
-    
-    if (document.languageId===clsLangId) {
-      // Loop through the class member symbols
-      symbols[0].children.forEach((symbol, idx) => {
-        const type = symbol.detail.toLowerCase();
-        //if (!["xdata", "method", "classmethod", "query", "trigger"].includes(type)) { return;}
-        let symbolLine: number;
-        if (languageServer) {
-          symbolLine = symbol.selectionRange.start.line;
-        } else {
-          // This extension's symbol provider doesn't have a range
-          // that always maps to the first line of the member definition
-          for (let l = symbol.range.start.line; l < document.lineCount; l++) {
-            symbolLine = l;
-            if (!document.lineAt(l).text.startsWith("///")) {break; }
-          }
-        }
-        
-        if (originsMap.has(symbol.name)) {
-          const origindet=originsMap.get(symbol.name);
-          result.push(this.addOverride(symbolLine,origindet.origin,origindet.uri,symbol.name));
-        }
-    });   
+    if (originsMap) {
+      const languageServer: boolean = vscode.extensions.getExtension(lsExtensionId)?.isActive ?? false;
+      
+      if (document.languageId===clsLangId) {
+        // Loop through the class member symbols
+        symbols[0].children.forEach((symbol, idx) => {
+            const type = symbol.detail.toLowerCase();
+            //if (!["xdata", "method", "classmethod", "query", "trigger"].includes(type)) { return;}
+            let symbolLine: number=0;
+            if (languageServer) {
+              symbolLine = symbol.selectionRange.start.line;
+            } else {
+              // This extension's symbol provider doesn't have a range
+              // that always maps to the first line of the member definition
+              for (let l = symbol.range.start.line; l < document.lineCount; l++) {
+                symbolLine = l;
+                if (!document.lineAt(l).text.startsWith("///")) {break; }
+              }
+            }
+            
+            if (originsMap.has(symbol.name)) {
+              const origindet=originsMap.get(symbol.name);
+              if (origindet) {
+                result.push(this.addOverride(symbolLine,origindet.origin,origindet.uri,symbol.name));
+              }
+            }
+        });   
+      }
     }
     
     

@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
 import { Cache } from './vscode-cache';
-import { AllMembersImplementationProvider } from './allMembersImplementationProvider';
-import * as url from "url";
 import { ObjectScriptCodeLensProvider } from "./codeLensProvider";
 /**
  * Cache for cookies from REST requests to InterSystems servers.
@@ -33,11 +31,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	cookiesCache = new Cache(context, "cookies");
 
 	context.subscriptions.push(
-		vscode.languages.registerImplementationProvider(
-			{ language: 'objectscript-class' },
-			new AllMembersImplementationProvider()
-		),
-
 		vscode.languages.registerCodeLensProvider(
       		{ language: 'objectscript-class' },
       		new ObjectScriptCodeLensProvider()
