@@ -2,16 +2,30 @@
   "name": "pxw-vscode-test",
   "displayName": "pxw-vscode-test",
   "description": "My first vscode extension.",
+  "publisher": "pxw-paul",
   "version": "0.0.1",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.103.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "intersystems",
+		"objectscript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pxw-paul/pxw-vscode-test.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pxw-paul/pxw-vscode-test/issues"
+  },
+  "homepage": "https://github.com/pxw-paul/pxw-vscode-test#readme",
   "activationEvents": [
     "onLanguage:objectscript-class"
-  ],
+    ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": []
@@ -27,6 +41,9 @@
   "extensionDependencies": [
     "intersystems-community.servermanager"
   ],
+  "dependencies": {
+    "axios": "^1.2.4"
+  },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
@@ -38,20 +55,5 @@
     "axios": "^1.12.2",
     "eslint": "^9.34.0",
     "typescript": "^5.9.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pxw-paul/pxw-vscode-test.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/pxw-paul/pxw-vscode-test/issues"
-  },
-  "homepage": "https://github.com/pxw-paul/pxw-vscode-test#readme",
-  "dependencies": {
-    "axios": "^1.2.4"
   }
 }
